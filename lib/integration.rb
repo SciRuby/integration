@@ -7,10 +7,10 @@
 # the rights to use, copy, modify, merge, publish, distribute, sublicense,
 # and/or sell copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
@@ -18,33 +18,32 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
 # OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# 
+#
 # Except as contained in this notice, the name of the Beng shall not
 # be used in advertising or otherwise to promote the sale, use or other dealings
 # in this Software without prior written authorization from Beng.
 
 # Diverse integration methods
 # Use Integration.integrate as wrapper to direct access to methods
-# 
-# Method API 
+#
+# Method API
 #
 
 class Integration
-  VERSION = '0.1.2'
   # Minus Infinity
   MInfinity=:minfinity
   # Infinity
   Infinity=:infinity
   class << self
-    
+
     # Create a method 'has_<library>' on Module
     # which require a library and return true or false
-    # according to success of failure 
+    # according to success of failure
     def create_has_library(library) #:nodoc:
       define_singleton_method("has_#{library}?") do
         cv="@@#{library}"
         if !class_variable_defined? cv
-          begin 
+          begin
             require library.to_s
             class_variable_set(cv, true)
           rescue LoadError
@@ -60,7 +59,7 @@ class Integration
     #   * Ayres : Outline of calculus
     def rectangle(t1, t2, n, &f)
       d=(t2-t1) / n.to_f
-      n.times.inject(0) {|ac,i| 
+      n.times.inject(0) {|ac,i|
         ac+f[t1+d*(i+0.5)]
       }*d
     end
@@ -72,7 +71,7 @@ class Integration
     def trapezoid(t1, t2, n, &f)
       d=(t2-t1) / n.to_f
       (d/2.0)*(f[t1]+
-      2*(1..(n-1)).inject(0){|ac,i| 
+      2*(1..(n-1)).inject(0){|ac,i|
       ac+f[t1+d*i]
       }+f[t2])
     end
@@ -82,16 +81,16 @@ class Integration
     #   * Ayres : Outline of calculus
     def simpson(t1, t2, n, &f)
       n += 1 unless n % 2 == 0
-      d=(t2-t1) / n.to_f      
+      d=(t2-t1) / n.to_f
       out= (d / 3.0)*(f[t1.to_f].to_f+
       ((1..(n-1)).inject(0) {|ac,i|
-        ac+((i%2==0) ? 2 : 4)*f[t1+d*i]  
+        ac+((i%2==0) ? 2 : 4)*f[t1+d*i]
       })+f[t2.to_f].to_f)
       out
     end
     # TODO: Document method
     def simpson3by8(t1, t2, n, &f)
-      d = (t2-t1) / n.to_f 
+      d = (t2-t1) / n.to_f
       ac = 0
       (0..n-1).each do |i|
         ac+=(d/8.0)*(f[t1+i*d]+3*f[t1+i*d+d/3]+3*f[t1+i*d+2*d/3]+f[t1+(i+1)*d])
@@ -100,7 +99,7 @@ class Integration
     end
     # TODO: Document method
     def boole(t1, t2, n, &f)
-      d = (t2-t1) / n.to_f 
+      d = (t2-t1) / n.to_f
       ac = 0
       (0..n-1).each do |i|
         ac+=(d/90.0)*(7*f[t1+i*d]+32*f[t1+i*d+d/4]+12*f[t1+i*d+d/2]+32*f[t1+i*d+3*d/4]+7*f[t1+(i+1)*d])
@@ -110,7 +109,7 @@ class Integration
 
     # TODO: Document method
     def open_trapezoid(t1, t2, n, &f)
-      d = (t2-t1) / n.to_f 
+      d = (t2-t1) / n.to_f
       ac = 0
       (0..n-1).each do |i|
         ac+=(d/2.0)*(f[t1+i*d+d/3]+f[t1+i*d+2*d/3])
@@ -119,7 +118,7 @@ class Integration
     end
     # TODO: Document method
     def milne(t1, t2, n, &f)
-      d = (t2-t1) / n.to_f 
+      d = (t2-t1) / n.to_f
       ac = 0
       (0..n-1).each do |i|
         ac+=(d/3.0)*(2*f[t1+i*d+d/4]-f[t1+i*d+d/2]+2*f[t1+i*d+3*d/4])
@@ -127,7 +126,7 @@ class Integration
       ac
     end
     # TODO: Document method
-    def adaptive_quadrature(a, b, tolerance)  
+    def adaptive_quadrature(a, b, tolerance)
       h = (b.to_f - a) / 2
       fa = yield(a)
       fc = yield(a + h)
@@ -187,10 +186,10 @@ class Integration
         else
           raise "Invalid number of spaced abscissas #{n}, should be 1-10"
       end
-      
+
       sum = 0
       (0...n).each do |i|
-        t = ((t1.to_f + t2) / 2.0) + (((t2 - t1) / 2.0) * z[i])        
+        t = ((t1.to_f + t2) / 2.0) + (((t2 - t1) / 2.0) * z[i])
         sum += w[i] * yield(t)
       end
       return ((t2 - t1) / 2.0) * sum
@@ -251,7 +250,7 @@ class Integration
       end
       r[j][j]
     end
-    
+
     # TODO: Document method
     def monte_carlo(t1, t2, n)
       width = (t2 - t1).to_f
@@ -277,7 +276,7 @@ class Integration
     # Methods available with Ruby/GSL library
     GSL_METHOD=[:qng, :qag]
     # Get the integral for a function +f+, with bounds +t1+ and
-    # +t2+ given a hash of +options+. 
+    # +t2+ given a hash of +options+.
     # If Ruby/GSL is available, you could use +Integration::Minfinity+
     # and +Integration::Infinity+ as bounds. Method
     # Options are
@@ -285,7 +284,7 @@ class Integration
     #                 Default: 1e-10
     # [:initial_step] Initial number of subdivitions
     # [:step]         Subdivitions increment on each iteration
-    # [:method]       Integration method. 
+    # [:method]       Integration method.
     # Methods are
     # [:rectangle] for [:initial_step+:step*iteration] quadrilateral subdivisions
     # [:trapezoid] for [:initial_step+:step*iteration] trapezoid-al subdivisions
@@ -304,7 +303,7 @@ class Integration
         lower_bound=t1
         upper_bound=t2
         options[:method]=:qag if options[:method].nil?
-      else 
+      else
         lower_bound = [t1, t2].min
         upper_bound = [t1, t2].max
       end
@@ -321,29 +320,29 @@ class Integration
       end
     end
     # TODO: Document method
-    def integrate_gsl(lower_bound,upper_bound,options,&f) 
-      
+    def integrate_gsl(lower_bound,upper_bound,options,&f)
+
       f = GSL::Function.alloc(&f)
       method=options[:method]
       tolerance=options[:tolerance]
-     
+
       if(method==:qag)
         w = GSL::Integration::Workspace.alloc()
-        if(is_infinite?(lower_bound) and  is_infinite?(upper_bound))        
+        if(is_infinite?(lower_bound) and  is_infinite?(upper_bound))
           #puts "ambos"
-          val=f.qagi([tolerance,0.0], 1000, w)  
+          val=f.qagi([tolerance,0.0], 1000, w)
         elsif is_infinite?(lower_bound)
           #puts "inferior #{upper_bound}"
-          val=f.qagil(upper_bound, [tolerance, 0], w) 
+          val=f.qagil(upper_bound, [tolerance, 0], w)
         elsif is_infinite?(upper_bound)
           #puts "superior"
           val=f.qagiu(lower_bound, [tolerance, 0], w)
         else
-          
+
           val=f.qag([lower_bound,upper_bound],[tolerance,0.0], GSL::Integration::GAUSS61, w)
         end
       elsif(method==:qng)
-        val=f.qng([lower_bound, upper_bound], [tolerance, 0.0]) 
+        val=f.qng([lower_bound, upper_bound], [tolerance, 0.0])
       else
         raise "Unknown integration method \"#{method}\""
       end
@@ -388,11 +387,11 @@ class Integration
           current_step+=step
           previous=value
           #puts "Llamando al metodo"
-          
+
           value=method_obj.call(lower_bound, upper_bound, current_step, &f)
         end
         #p diffs
-        
+
         value
       end
     end

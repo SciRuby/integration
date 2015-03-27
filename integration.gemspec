@@ -1,7 +1,6 @@
-# -*- encoding: utf-8 -*-
-lib = File.expand_path('../lib/', __FILE__)
-$:.unshift lib unless $:.include?(lib)
-require "integration" 
+$LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
+
+require 'integration/version'
 
 Gem::Specification.new do |s|
   s.name = "integration"
@@ -10,7 +9,7 @@ Gem::Specification.new do |s|
   s.description = "Numerical integration for Ruby, with a simple interface"
   s.email = ["clbustos@gmail.com", "No Email"]
   s.files         = `git ls-files`.split("\n")
-  s.test_files    = `git ls-files -- {test,spec,features,benchmark}/*`.split("\n")  
+  s.test_files    = `git ls-files -- {test,spec,features,benchmark}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
   s.summary = "A suite for integration in Ruby"
