@@ -1,14 +1,9 @@
-# -*- ruby -*-
-$:.unshift(File.expand_path(File.dirname(__FILE__)+"/lib/"))
-require 'rubygems'
-require 'integration'
+$LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
+
+require 'integration/version'
 require 'bundler'
-
-Bundler::GemHelper.install_tasks
-
-
-gemspec = eval(IO.read("integration.gemspec"))
-
+require 'bundler/gem_tasks'
+require 'rspec/core/rake_task'
 
 begin
   Bundler.setup(:default, :development)
@@ -18,23 +13,9 @@ rescue Bundler::BundlerError => e
   exit e.status_code
 end
 
-
-
-require "rubygems/package_task"
-Gem::PackageTask.new(gemspec).define
-
-desc "install the gem locally"
-task :install => [:package] do
-  sh %{gem install pkg/integration-#{Integration::VERSION}.gem}
-end
-
-require 'rspec/core/rake_task'
-require 'rspec/core'
-require 'rspec/core/rake_task'
 RSpec::Core::RakeTask.new(:spec) do |spec|
   spec.pattern = FileList['spec/**/*_spec.rb']
 end
-
 
 desc "Open an irb session preloaded with integration"
 task :console do
@@ -42,4 +23,3 @@ task :console do
 end
 
 task :default => :spec
-# vim: syntax=ruby
