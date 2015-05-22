@@ -436,7 +436,7 @@ class Integration
       (width * height) * area_ratio
     end
 
-    def is_infinite?(v)
+    def infinite?(v)
       v == Infinity || v == MInfinity
     end
 
@@ -467,7 +467,7 @@ class Integration
     # [:qng] GSL QNG non-adaptive Gauss-Kronrod integration
     # [:qag] GSL QAG adaptive integration, with support for infinite bounds
     def integrate(t1, t2, options = {}, &f)
-      inf_bounds = (is_infinite?(t1) || is_infinite?(t2))
+      inf_bounds = (infinite?(t1) || infinite?(t2))
       fail 'No function passed' unless block_given?
       fail 'Non-numeric bounds' unless ((t1.is_a? Numeric) && (t2.is_a? Numeric)) || inf_bounds
       if inf_bounds
@@ -499,11 +499,11 @@ class Integration
 
       if (method == :qag)
         w = GSL::Integration::Workspace.alloc
-        if is_infinite?(lower_bound) && is_infinite?(upper_bound)
+        if infinite?(lower_bound) && infinite?(upper_bound)
           val = f.qagi([tolerance, 0.0], 1000, w)
-        elsif is_infinite?(lower_bound)
+        elsif infinite?(lower_bound)
           val = f.qagil(upper_bound, [tolerance, 0], w)
-        elsif is_infinite?(upper_bound)
+        elsif infinite?(upper_bound)
           val = f.qagiu(lower_bound, [tolerance, 0], w)
         else
 
