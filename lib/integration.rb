@@ -416,9 +416,11 @@ class Integration
       r[j][j]
     end
 
-    # Monte Carlo:
-    # Uses a non deterministic(probabilistic) approach for calculation of definite integrals
-    # Estimates the integral by randomly choosing points in a set and then calculating the number of points that fall in the desired area
+    # Monte Carlo
+    #
+    # Uses a non-deterministic approach for calculation of definite integrals.
+    # Estimates the integral by randomly choosing points in a set and then
+    # calculating the number of points that fall in the desired area.
     def monte_carlo(t1, t2, n)
       width = (t2 - t1).to_f
       height = nil
@@ -440,32 +442,38 @@ class Integration
       v == Infinity || v == MInfinity
     end
 
-    # Methods available on pure ruby
-    RUBY_METHOD = [:rectangle, :trapezoid, :simpson, :adaptive_quadrature, :gauss, :romberg, :monte_carlo, :gauss_kronrod, :simpson3by8, :boole, :open_trapezoid, :milne]
+    # Pure Ruby methods available.
+    RUBY_METHOD = [:rectangle, :trapezoid, :simpson, :adaptive_quadrature,
+                   :gauss, :romberg, :monte_carlo, :gauss_kronrod,
+                   :simpson3by8, :boole, :open_trapezoid, :milne]
 
-    # Methods available with Ruby/GSL library
+    # Methods available when using the `rb-gsl` gem.
     GSL_METHOD = [:qng, :qag]
 
-    # Get the integral for a function +f+, with bounds +t1+ and
-    # +t2+ given a hash of +options+.
-    # If Ruby/GSL is available, you could use +Integration::Minfinity+
-    # and +Integration::Infinity+ as bounds. Method
-    # Options are
+    # Get the integral for a function +f+, with bounds +t1+ and +t2+ given a
+    # hash of +options+. If Ruby/GSL is available, you can use
+    # +Integration::Minfinity+ and +Integration::Infinity+ as bounds. Method
+    #
+    # Options are:
     # [:tolerance]    Maximum difference between real and calculated integral.
-    #                 Default: 1e-10
-    # [:initial_step] Initial number of subdivitions
-    # [:step]         Subdivitions increment on each iteration
+    #                 Default: 1e-10.
+    # [:initial_step] Initial number of subdivisions.
+    # [:step]         Subdivition increment on each iteration.
     # [:method]       Integration method.
-    # Methods are
-    # [:rectangle] for [:initial_step+:step*iteration] quadrilateral subdivisions
-    # [:trapezoid] for [:initial_step+:step*iteration] trapezoid-al subdivisions
-    # [:simpson]   for [:initial_step+:step*iteration] parabolic subdivisions
-    # [:adaptive_quadrature] for recursive appoximations until error [tolerance]
-    # [:gauss] [:initial_step+:step*iteration] weighted subdivisons using translated -1 -> +1 endpoints
-    # [:romberg] extrapolation of recursion approximation until error < [tolerance]
-    # [:monte_carlo] make [:initial_step+:step*iteration] random samples, and check for above/below curve
-    # [:qng] GSL QNG non-adaptive Gauss-Kronrod integration
-    # [:qag] GSL QAG adaptive integration, with support for infinite bounds
+    #
+    # Available methods are:
+    #
+    # [:rectangle] for [:initial_step+:step*iteration] quadrilateral subdivisions.
+    # [:trapezoid] for [:initial_step+:step*iteration] trapezoid-al subdivisions.
+    # [:simpson]   for [:initial_step+:step*iteration] parabolic subdivisions.
+    # [:adaptive_quadrature] for recursive appoximations until error [tolerance].
+    # [:gauss] [:initial_step+:step*iteration] weighted subdivisons using
+    # translated -1 -> +1 endpoints.
+    # [:romberg] extrapolation of recursion approximation until error < [tolerance].
+    # [:monte_carlo] make [:initial_step+:step*iteration] random samples, and
+    # check for above/below curve.
+    # [:qng] GSL QNG non-adaptive Gauss-Kronrod integration.
+    # [:qag] GSL QAG adaptive integration, with support for infinite bounds.
     def integrate(t1, t2, options = {}, &f)
       inf_bounds = (infinite?(t1) || infinite?(t2))
       fail 'No function passed' unless block_given?
