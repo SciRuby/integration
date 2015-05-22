@@ -13,9 +13,10 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
   s.summary = "A suite for integration in Ruby"
-  s.add_runtime_dependency 'text-table', '~>1.2'
-  s.add_runtime_dependency 'rb-gsl', '~>1.2'
-  s.add_development_dependency 'rake', '~>10'
-  s.add_development_dependency 'bundler', '~>1.3'
-  s.add_development_dependency 'rspec', '~>2.0'
+
+  s.add_runtime_dependency 'text-table', '~> 1.2'
+
+  s.add_development_dependency 'rake', '~> 10.4'
+  s.add_development_dependency 'bundler', '~> 1.9'
+  s.add_development_dependency 'rspec', '~> 3.2'
 end
