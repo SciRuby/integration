@@ -26,15 +26,150 @@
 # Diverse integration methods
 # Use Integration.integrate as wrapper to direct access to methods
 #
-# Method API
-#
-
 class Integration
+
   # Minus Infinity
   MInfinity = :minfinity
+
   # Infinity
   Infinity = :infinity
+
   class << self
+
+    # Check if `value` is plus or minus infinity.
+    #
+    # @param value Value to be tested.
+    def infinite?(value)
+      value == Integration::Infinity || value == Integration::MInfinity
+    end
+
+    # Pure Ruby methods available.
+    RUBY_METHOD = [:rectangle, :trapezoid, :simpson, :adaptive_quadrature,
+                   :gauss, :romberg, :monte_carlo, :gauss_kronrod,
+                   :simpson3by8, :boole, :open_trapezoid, :milne]
+
+    # Methods available when using the `rb-gsl` gem.
+    GSL_METHOD = [:qng, :qag]
+
+    # Get the integral for a function +f+, with bounds +t1+ and +t2+ given a
+    # hash of +options+. If Ruby/GSL is available, you can use
+    # +Integration::Minfinity+ and +Integration::Infinity+ as bounds. Method
+    #
+    # Options are:
+    # [:tolerance]    Maximum difference between real and calculated integral.
+    #                 Default: 1e-10.
+    # [:initial_step] Initial number of subdivisions.
+    # [:step]         Subdivition increment on each iteration.
+    # [:method]       Integration method.
+    #
+    # Available methods are:
+    #
+    # [:rectangle] for [:initial_step+:step*iteration] quadrilateral subdivisions.
+    # [:trapezoid] for [:initial_step+:step*iteration] trapezoid-al subdivisions.
+    # [:simpson]   for [:initial_step+:step*iteration] parabolic subdivisions.
+    # [:adaptive_quadrature] for recursive appoximations until error [tolerance].
+    # [:gauss] [:initial_step+:step*iteration] weighted subdivisons using
+    # translated -1 -> +1 endpoints.
+    # [:romberg] extrapolation of recursion approximation until error < [tolerance].
+    # [:monte_carlo] make [:initial_step+:step*iteration] random samples, and
+    # check for above/below curve.
+    # [:qng] GSL QNG non-adaptive Gauss-Kronrod integration.
+    # [:qag] GSL QAG adaptive integration, with support for infinite bounds.
+    def integrate(t1, t2, options = {}, &f)
+      inf_bounds = (infinite?(t1) || infinite?(t2))
+      fail 'No function passed' unless block_given?
+      fail 'Non-numeric bounds' unless ((t1.is_a? Numeric) && (t2.is_a? Numeric)) || inf_bounds
+      if inf_bounds
+        lower_bound = t1
+        upper_bound = t2
+        options[:method] = :qag if options[:method].nil?
+      else
+        lower_bound = [t1, t2].min
+        upper_bound = [t1, t2].max
+      end
+      def_method = (has_gsl?) ? :qag : :simpson
+      default_opts = { tolerance: 1e-10, initial_step: 16, step: 16, method: def_method }
+      options = default_opts.merge(options)
+      if RUBY_METHOD.include? options[:method]
+        fail "Ruby methods doesn't support infinity bounds" if inf_bounds
+        integrate_ruby(lower_bound, upper_bound, options, &f)
+      elsif GSL_METHOD.include? options[:method]
+        integrate_gsl(lower_bound, upper_bound, options, &f)
+      else
+        fail "Unknown integration method \"#{options[:method]}\""
+      end
+    end
+
+    # TODO: Document method
+    def integrate_gsl(lower_bound, upper_bound, options, &f)
+      f = GSL::Function.alloc(&f)
+      method = options[:method]
+      tolerance = options[:tolerance]
+
+      if (method == :qag)
+        w = GSL::Integration::Workspace.alloc
+        if infinite?(lower_bound) && infinite?(upper_bound)
+          val = f.qagi([tolerance, 0.0], 1000, w)
+        elsif infinite?(lower_bound)
+          val = f.qagil(upper_bound, [tolerance, 0], w)
+        elsif infinite?(upper_bound)
+          val = f.qagiu(lower_bound, [tolerance, 0], w)
+        else
+
+          val = f.qag([lower_bound, upper_bound], [tolerance, 0.0], GSL::Integration::GAUSS61, w)
+        end
+      elsif (method == :qng)
+        val = f.qng([lower_bound, upper_bound], [tolerance, 0.0])
+      else
+        fail "Unknown integration method \"#{method}\""
+      end
+      val[0]
+    end
+
+    def integrate_ruby(lower_bound, upper_bound, options, &f)
+      method = options[:method]
+      tolerance = options[:tolerance]
+      initial_step = options[:initial_step]
+      step = options[:step]
+      points = options[:points]
+      begin
+        method_obj = Integration.method(method.to_s.downcase)
+      rescue
+        raise "Unknown integration method \"#{method}\""
+      end
+      current_step = initial_step
+
+      if method == :adaptive_quadrature || method == :romberg || method == :gauss || method == :gauss_kronrod
+        if (method == :gauss)
+          initial_step = 10 if initial_step > 10
+          tolerance = initial_step
+          method_obj.call(lower_bound, upper_bound, tolerance, &f)
+        elsif (method == :gauss_kronrod)
+          initial_step = 10 if initial_step > 10
+          tolerance = initial_step
+          points = points unless points.nil?
+          method_obj.call(lower_bound, upper_bound, tolerance, points, &f)
+        else
+          method_obj.call(lower_bound, upper_bound, tolerance, &f)
+        end
+      else
+        value = method_obj.call(lower_bound, upper_bound, current_step, &f)
+        previous = value + (tolerance * 2)
+        diffs = []
+        while (previous - value).abs > tolerance
+          diffs.push((previous - value).abs)
+          # diffs.push value
+          current_step += step
+          previous = value
+
+          value = method_obj.call(lower_bound, upper_bound, current_step, &f)
+        end
+
+        value
+      end
+    end
+
+
     # Create a method 'has_<library>' on Module
     # which require a library and return true or false
     # according to success of failure
@@ -438,135 +573,6 @@ class Integration
       (width * height) * area_ratio
     end
 
-    def infinite?(v)
-      v == Infinity || v == MInfinity
-    end
-
-    # Pure Ruby methods available.
-    RUBY_METHOD = [:rectangle, :trapezoid, :simpson, :adaptive_quadrature,
-                   :gauss, :romberg, :monte_carlo, :gauss_kronrod,
-                   :simpson3by8, :boole, :open_trapezoid, :milne]
-
-    # Methods available when using the `rb-gsl` gem.
-    GSL_METHOD = [:qng, :qag]
-
-    # Get the integral for a function +f+, with bounds +t1+ and +t2+ given a
-    # hash of +options+. If Ruby/GSL is available, you can use
-    # +Integration::Minfinity+ and +Integration::Infinity+ as bounds. Method
-    #
-    # Options are:
-    # [:tolerance]    Maximum difference between real and calculated integral.
-    #                 Default: 1e-10.
-    # [:initial_step] Initial number of subdivisions.
-    # [:step]         Subdivition increment on each iteration.
-    # [:method]       Integration method.
-    #
-    # Available methods are:
-    #
-    # [:rectangle] for [:initial_step+:step*iteration] quadrilateral subdivisions.
-    # [:trapezoid] for [:initial_step+:step*iteration] trapezoid-al subdivisions.
-    # [:simpson]   for [:initial_step+:step*iteration] parabolic subdivisions.
-    # [:adaptive_quadrature] for recursive appoximations until error [tolerance].
-    # [:gauss] [:initial_step+:step*iteration] weighted subdivisons using
-    # translated -1 -> +1 endpoints.
-    # [:romberg] extrapolation of recursion approximation until error < [tolerance].
-    # [:monte_carlo] make [:initial_step+:step*iteration] random samples, and
-    # check for above/below curve.
-    # [:qng] GSL QNG non-adaptive Gauss-Kronrod integration.
-    # [:qag] GSL QAG adaptive integration, with support for infinite bounds.
-    def integrate(t1, t2, options = {}, &f)
-      inf_bounds = (infinite?(t1) || infinite?(t2))
-      fail 'No function passed' unless block_given?
-      fail 'Non-numeric bounds' unless ((t1.is_a? Numeric) && (t2.is_a? Numeric)) || inf_bounds
-      if inf_bounds
-        lower_bound = t1
-        upper_bound = t2
-        options[:method] = :qag if options[:method].nil?
-      else
-        lower_bound = [t1, t2].min
-        upper_bound = [t1, t2].max
-      end
-      def_method = (has_gsl?) ? :qag : :simpson
-      default_opts = { tolerance: 1e-10, initial_step: 16, step: 16, method: def_method }
-      options = default_opts.merge(options)
-      if RUBY_METHOD.include? options[:method]
-        fail "Ruby methods doesn't support infinity bounds" if inf_bounds
-        integrate_ruby(lower_bound, upper_bound, options, &f)
-      elsif GSL_METHOD.include? options[:method]
-        integrate_gsl(lower_bound, upper_bound, options, &f)
-      else
-        fail "Unknown integration method \"#{options[:method]}\""
-      end
-    end
-
-    # TODO: Document method
-    def integrate_gsl(lower_bound, upper_bound, options, &f)
-      f = GSL::Function.alloc(&f)
-      method = options[:method]
-      tolerance = options[:tolerance]
-
-      if (method == :qag)
-        w = GSL::Integration::Workspace.alloc
-        if infinite?(lower_bound) && infinite?(upper_bound)
-          val = f.qagi([tolerance, 0.0], 1000, w)
-        elsif infinite?(lower_bound)
-          val = f.qagil(upper_bound, [tolerance, 0], w)
-        elsif infinite?(upper_bound)
-          val = f.qagiu(lower_bound, [tolerance, 0], w)
-        else
-
-          val = f.qag([lower_bound, upper_bound], [tolerance, 0.0], GSL::Integration::GAUSS61, w)
-        end
-      elsif (method == :qng)
-        val = f.qng([lower_bound, upper_bound], [tolerance, 0.0])
-      else
-        fail "Unknown integration method \"#{method}\""
-      end
-      val[0]
-    end
-
-    def integrate_ruby(lower_bound, upper_bound, options, &f)
-      method = options[:method]
-      tolerance = options[:tolerance]
-      initial_step = options[:initial_step]
-      step = options[:step]
-      points = options[:points]
-      begin
-        method_obj = Integration.method(method.to_s.downcase)
-      rescue
-        raise "Unknown integration method \"#{method}\""
-      end
-      current_step = initial_step
-
-      if method == :adaptive_quadrature || method == :romberg || method == :gauss || method == :gauss_kronrod
-        if (method == :gauss)
-          initial_step = 10 if initial_step > 10
-          tolerance = initial_step
-          method_obj.call(lower_bound, upper_bound, tolerance, &f)
-        elsif (method == :gauss_kronrod)
-          initial_step = 10 if initial_step > 10
-          tolerance = initial_step
-          points = points unless points.nil?
-          method_obj.call(lower_bound, upper_bound, tolerance, points, &f)
-        else
-          method_obj.call(lower_bound, upper_bound, tolerance, &f)
-        end
-      else
-        value = method_obj.call(lower_bound, upper_bound, current_step, &f)
-        previous = value + (tolerance * 2)
-        diffs = []
-        while (previous - value).abs > tolerance
-          diffs.push((previous - value).abs)
-          # diffs.push value
-          current_step += step
-          previous = value
-
-          value = method_obj.call(lower_bound, upper_bound, current_step, &f)
-        end
-
-        value
-      end
-    end
   end
 
   create_has_library :gsl
