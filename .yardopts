@@ -1,0 +1,4 @@
+--title "Integration"
+--markup markdown
+lib/**/*.rb
+README.md History.txt
