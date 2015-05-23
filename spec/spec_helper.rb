@@ -1,16 +1,16 @@
-$:.unshift(File.dirname(__FILE__)+"/../lib")
+$LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
+
+require 'integration'
+require 'rspec'
+
 begin
   require 'simplecov'
   SimpleCov.start do
-    add_filter "/spec/"
-    add_group "Libraries", "lib"
+    add_filter '/spec/'
+    add_group 'Libraries', 'lib'
   end
 rescue LoadError
 end
-require 'rspec'
-require 'integration'
-
-
 
 RSpec.configure do |config|
   config.expect_with :rspec do |c|
