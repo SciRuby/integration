@@ -92,7 +92,7 @@ class Integration
         upper_bound = [t1, t2].max
       end
 
-      def_method = (has_gsl?) ? :qag : :simpson
+      def_method = (Integration.has_gsl?) ? :qag : :simpson
       default_opts = { tolerance: 1e-10, initial_step: 16, step: 16, method: def_method }
       options = default_opts.merge(options)
 
@@ -179,21 +179,22 @@ class Integration
       end
     end
 
-    def create_has_library(library) #:nodoc:
-      define_singleton_method("has_#{library}?") do
-        cv = "@@#{library}"
-        unless class_variable_defined? cv
-          begin
-            require library.to_s
-            class_variable_set(cv, true)
-          rescue LoadError
-            class_variable_set(cv, false)
-          end
+    # Check if GSL is available. Require the library if it is present. Return a
+    # boolean indicating its availability.
+    #
+    # @return [Boolean] Whether GSL is available.
+    def has_gsl?
+      gsl_available = '@@gsl'
+      if class_variable_defined? gsl_available
+        class_variable_get(gsl_available)
+      else
+        begin
+          require 'gsl'
+          class_variable_set(gsl_available, true)
+        rescue LoadError
+          class_variable_set(gsl_available, false)
         end
-        class_variable_get(cv)
       end
     end
   end
-
-  create_has_library :gsl
 end
