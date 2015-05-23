@@ -106,7 +106,7 @@ class Integration
       end
     end
 
-    # TODO: Document method
+    # Integrate using the GSL bindings.
     def integrate_gsl(lower_bound, upper_bound, options, &f)
       f = GSL::Function.alloc(&f)
       method = options[:method]
@@ -114,21 +114,24 @@ class Integration
 
       if (method == :qag)
         w = GSL::Integration::Workspace.alloc
-        if infinite?(lower_bound) && infinite?(upper_bound)
-          val = f.qagi([tolerance, 0.0], 1000, w)
-        elsif infinite?(lower_bound)
-          val = f.qagil(upper_bound, [tolerance, 0], w)
-        elsif infinite?(upper_bound)
-          val = f.qagiu(lower_bound, [tolerance, 0], w)
-        else
 
-          val = f.qag([lower_bound, upper_bound], [tolerance, 0.0], GSL::Integration::GAUSS61, w)
+        val = if infinite?(lower_bound) && infinite?(upper_bound)
+          f.qagi([tolerance, 0.0], 1000, w)
+        elsif infinite?(lower_bound)
+          f.qagil(upper_bound, [tolerance, 0], w)
+        elsif infinite?(upper_bound)
+          f.qagiu(lower_bound, [tolerance, 0], w)
+        else
+          f.qag([lower_bound, upper_bound], [tolerance, 0.0], GSL::Integration::GAUSS61, w)
         end
+
       elsif (method == :qng)
         val = f.qng([lower_bound, upper_bound], [tolerance, 0.0])
+
       else
         fail "Unknown integration method \"#{method}\""
       end
+
       val[0]
     end
 
@@ -147,7 +150,7 @@ class Integration
 
       current_step = initial_step
 
-      if method == :adaptive_quadrature || method == :romberg || method == :gauss || method == :gauss_kronrod
+      if [:adaptive_quadrature, :romberg, :gauss, :gauss_kronrod].include? method
         if (method == :gauss)
           initial_step = 10 if initial_step > 10
           tolerance = initial_step
@@ -164,12 +167,11 @@ class Integration
         value = method_obj.call(lower_bound, upper_bound, current_step, &f)
         previous = value + (tolerance * 2)
         diffs = []
+
         while (previous - value).abs > tolerance
           diffs.push((previous - value).abs)
-          # diffs.push value
           current_step += step
           previous = value
-
           value = method_obj.call(lower_bound, upper_bound, current_step, &f)
         end
 
@@ -177,9 +179,6 @@ class Integration
       end
     end
 
-    # Create a method 'has_<library>' on Module
-    # which require a library and return true or false
-    # according to success of failure
     def create_has_library(library) #:nodoc:
       define_singleton_method("has_#{library}?") do
         cv = "@@#{library}"
