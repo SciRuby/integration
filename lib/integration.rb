@@ -28,7 +28,7 @@ require 'integration/methods'
 # Diverse integration methods
 # Use Integration.integrate as wrapper to direct access to methods
 #
-class Integration
+module Integration
 
   # Minus Infinity
   MInfinity = :minfinity

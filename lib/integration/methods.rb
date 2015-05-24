@@ -1,4 +1,4 @@
-class Integration
+module Integration
   class << self
 
     # Rectangle method
